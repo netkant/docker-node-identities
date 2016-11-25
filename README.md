@@ -28,6 +28,6 @@ docker run -d -p 80:80 -l "io.cuddy.user=johndoe::1001" nginx
 ```
 This properly wouldn't make much sense if you are running a single instance, but let's assume you are running a service of 10 (or more) replicas, it would be rather trivial to create the same user on all nodes running or service, so this would make your day:
 ```bash
-docker service create -p 80:80 -l "io.cuddy.group=thedoes::1010:" -l "io.cuddy.user=johndoe::1001:1010" nginx
+docker service create -p 80:80 -l "io.cuddy.group=thedoes::1010" -l "io.cuddy.user=johndoe::1001:1010" nginx
 ```
 Now all nodes running a replica will have the user `johndoe` (uid: `1001`) created, and added to the group `thedoes` (gid: `1010`). Scaling the service to 5 and the nodes no longer running a replica will have the user and group removed.
