@@ -1,0 +1,9 @@
+[Unit]
+Description=cuddy
+
+[Service]
+ExecStart=/usr/local/bin/cuddy
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

@@ -32,5 +32,5 @@ else
 
     # run docker with build cmd
     TIMESTAMP=$(date +"%s")
-    docker run --rm -it -v "$GOPATH":/work -e "GOPATH=/work" -w /work/src/$GIT_REPO golang:latest ./build.sh $TIMESTAMP
+    docker run --rm -it -v "$GOPATH":/work -e "GOPATH=/work" -w /work/src/$GIT_REPO golang:latest ./scripts/build.sh $TIMESTAMP
 fi

@@ -4,6 +4,7 @@ package main
 import (
     "context"
     "fmt"
+    "os"
 
     ctypes   "github.com/urlund/cuddy/types"
     dtypes   "github.com/docker/docker/api/types"
@@ -16,7 +17,7 @@ import (
 func main() {
     // ...
     if client, err := dclient.NewEnvClient(); err != nil {
-        panic(err)
+        fmt.Printf("%s\n", err)
     } else {
         // ...
         go sync(client)
@@ -27,22 +28,22 @@ func main() {
 }
 
 // ...
-func sync(client *dclient.Client) error {
+func sync(client *dclient.Client) {
 
     // ...
-    containers, err := getContainers(client)
+    containers, err := getContainers(client);
+
     if err != nil {
-        return err
+        fmt.Printf("%s\n", err)
+        os.Exit(1)
     }
 
     // ...
     for _, container := range containers {
-        if err := create(client, container.Labels); err != nil {
+        if err := create(container.Labels); err != nil {
             fmt.Printf("%s\n", err)
         }
     }
-
-    return nil
 }
 
 // ...
@@ -59,21 +60,25 @@ func listen(client *dclient.Client) {
     for {
         select {
         case err := <-errs:
-            fmt.Printf("%s\n", err)
-        case e := <-messages:
-            container, err := client.ContainerInspect(context.Background(), e.ID)
             if err != nil {
                 fmt.Printf("%s\n", err)
-                continue
             }
-
+        case e := <-messages:
             switch e.Action {
             case "start":   // always triggered when a container starts running
-                if err := create(client, container.Config.Labels); err != nil {
+                if container, err := getContainer(client, e.ID); err == nil {
+                    if err := create(container.Config.Labels); err != nil {
+                        fmt.Printf("%s\n", err)
+                    }
+                } else {
                     fmt.Printf("%s\n", err)
                 }
             case "die":     // other actions would be "kill" or "stop", but "die" is always triggered when a container exits
-                if err := delete(client, container.Config.Labels); err != nil {
+                if container, err := getContainer(client, e.ID); err == nil {
+                    if err := delete(client, container.Config.Labels); err != nil {
+                        fmt.Printf("%s\n", err)
+                    }
+                } else {
                     fmt.Printf("%s\n", err)
                 }
             }
@@ -108,7 +113,7 @@ func parseGroup(labels map[string]string) (ctypes.Group, error) {
 }
 
 // ...
-func create(client *dclient.Client, labels map[string]string) error {
+func create(labels map[string]string) error {
     group, err := parseGroup(labels);
     if err == nil {
         if err := group.Create(); err != nil {
@@ -200,4 +205,9 @@ func getContainers(client *dclient.Client) ([]dtypes.Container, error) {
 
     // ...
     return client.ContainerList(context.Background(), containerListOptions)
+}
+
+// ...
+func getContainer(client *dclient.Client, id string) (dtypes.ContainerJSON, error) {
+    return client.ContainerInspect(context.Background(), id)
 }
