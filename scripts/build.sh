@@ -9,14 +9,9 @@ if [ ! -z $1 ]; then
         exit 1;
     fi
 
-    # now build
-    for GOOS in darwin linux; do
-        for GOARCH in 386 amd64; do
-            BIN_PATH="bin/$1/$BIN_NAME-$GOOS-$GOARCH"
-            echo "building $BIN_PATH"
-            go build -o $BIN_PATH
-        done
-    done
+    BIN_PATH="bin/$1/$BIN_NAME-linux-amd64"
+    echo "building $BIN_PATH"
+    go build -o $BIN_PATH
 else
     # check if docker is installed
     if [ $(which docker > /dev/null 2>&1; echo $?) -ne 0 ]; then
