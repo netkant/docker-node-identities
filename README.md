@@ -37,7 +37,7 @@ To keep things running, you can use systemd:
 
 ```
 wget -O /usr/local/bin/docker-node-identities https://github.com/urlund/docker-node-identities/releases/download/1.0.1/docker-node-identities-linux-amd64
-wget -O /etc/systemd/system/docker-node-identities.service  https://raw.githubusercontent.com/urlund/docker-node-identities/master/docker-node-identities.service
+wget -O /etc/systemd/system/docker-node-identities.service https://raw.githubusercontent.com/urlund/docker-node-identities/master/docker-node-identities.service
 chmod +x /usr/local/bin/docker-node-identities
 service docker-node-identities start
 ```
