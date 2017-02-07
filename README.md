@@ -18,6 +18,8 @@ Usage of docker-node-identities:
       Label containing group config (default "docker.node.identities.group")
 -user-label string
       Label containing user config (default "docker.node.identities.user")
+-version
+	  Show version
 ```
 
 ## Labels
