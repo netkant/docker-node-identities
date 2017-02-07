@@ -1,3 +1,2 @@
-bin/*
-!bin/README.md
+bin*
 scripts/distribute.sh

@@ -10,7 +10,7 @@ import (
 	devents "github.com/docker/docker/api/types/events"
 	dfilters "github.com/docker/docker/api/types/filters"
 	dclient "github.com/docker/docker/client"
-	ctypes "github.com/urlund/cuddy/types"
+	ctypes "github.com/urlund/docker-node-identities/types"
 )
 
 // ...
