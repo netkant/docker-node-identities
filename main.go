@@ -90,7 +90,7 @@ func listen(client *dclient.Client) {
 func parseUser(labels map[string]string) (ctypes.User, error) {
 	var user ctypes.User
 
-	data, exists := labels[CUDDY_USER_LABEL]
+	data, exists := labels[USER_LABEL]
 	if !exists {
 		return user, fmt.Errorf("user label does not exist")
 	}
@@ -103,7 +103,7 @@ func parseUser(labels map[string]string) (ctypes.User, error) {
 func parseGroup(labels map[string]string) (ctypes.Group, error) {
 	var group ctypes.Group
 
-	data, exists := labels[CUDDY_GROUP_LABEL]
+	data, exists := labels[GROUP_LABEL]
 	if !exists {
 		return group, fmt.Errorf("group label does not exist")
 	}
@@ -197,7 +197,7 @@ func delete(client *dclient.Client, labels map[string]string) error {
 func getContainers(client *dclient.Client) ([]dtypes.Container, error) {
 	// ...
 	filters := dfilters.NewArgs()
-	filters.Add("label", CUDDY_USER_LABEL)
+	filters.Add("label", USER_LABEL)
 
 	containerListOptions := dtypes.ContainerListOptions{
 		Filters: filters,
