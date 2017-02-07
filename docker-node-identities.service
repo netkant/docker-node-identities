@@ -1,8 +1,8 @@
 [Unit]
-Description=cuddy
+Description=docker-node-identities
 
 [Service]
-ExecStart=/usr/local/bin/cuddy
+ExecStart=/usr/local/bin/docker-node-identities
 Restart=always
 
 [Install]
