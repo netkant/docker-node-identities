@@ -32,6 +32,18 @@ Note: `members` will be ommited.
 ### User
 Content of the user label is expected to be `username:password:uid:gid:comment:home:shell` - and yes, you might already have guessed it, it's just like `/etc/passwd`.
 
+## Install on docker node
+To keep things running, you can use the systemd:
+
+```
+wget -O /usr/local/bin/docker-node-identities https://github.com/urlund/docker-node-identities/releases/download/1.0.1/docker-node-identities-linux-amd64
+wget -O /etc/systemd/system/docker-node-identities.service  https://raw.githubusercontent.com/urlund/docker-node-identities/master/docker-node-identities.service
+chmod +x /usr/local/bin/docker-node-identities
+service docker-node-identities start
+```
+
+Now `docker-node-identities` should be running and ready to keep your users/groups in sync.
+
 ## Examples
 The most basic example will create a user `johndoe` (uid: `1001`), and a group `johndoe` (gid: `1001`)
 

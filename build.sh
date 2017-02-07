@@ -9,6 +9,7 @@ GIT_REPO="github.com/urlund/$BIN_NAME"
 rm -rf $BIN_NAME
 
 sed -i '' -e "s/\"version: .*\"/\"version: $VERSION\"/g" init.go
+sed -i '' -e "s/download\/.*\/docker/download\/$VERSION\/docker/g" README.md
 
 # check if docker is installed
 if [ $(which docker > /dev/null 2>&1; echo $?) -ne 0 ]; then
