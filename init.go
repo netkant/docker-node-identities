@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"strconv"
 )
@@ -13,6 +14,7 @@ var (
 	DOCKER_API_VERSION float64
 	DOCKER_CERT_PATH   string
 	DOCKER_TLS_VERIFY  bool
+	VERSION            bool
 	DOCKER_HOST        string
 )
 
@@ -54,7 +56,13 @@ func init() {
 	flag.StringVar(&DOCKER_CERT_PATH, "docker-cert-path", DOCKER_CERT_PATH, "Path to TLS files")
 	flag.StringVar(&DOCKER_HOST, "docker-host", DOCKER_HOST, "Daemon socket to connect to")
 	flag.BoolVar(&DOCKER_TLS_VERIFY, "docker-tls-verify", DOCKER_TLS_VERIFY, "Use TLS and verify the remote")
+	flag.BoolVar(&VERSION, "version", VERSION, "Show version")
 	flag.Parse()
+
+	if VERSION {
+		fmt.Println("version: 1.0.1")
+		os.Exit(0)
+	}
 
 	// ...
 	os.Setenv("DOCKER_API_VERSION", strconv.FormatFloat(DOCKER_API_VERSION, 'f', 2, 64))
