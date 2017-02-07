@@ -4,6 +4,7 @@ Description=docker-node-identities
 [Service]
 ExecStart=/usr/local/bin/docker-node-identities
 Restart=always
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
