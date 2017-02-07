@@ -1,8 +1,14 @@
 #!/bin/bash
 VERSION=`cat VERSION`
+GOOS=linux
+GOARCH=amd64
 BIN_NAME="docker-node-identities"
-BIN_PATH="bin/$BIN_NAME-$VERSION"
+BIN_PATH="bin/$VERSION/$BIN_NAME-$GOOS-$GOARCH"
 GIT_REPO="github.com/urlund/$BIN_NAME"
+
+rm -rf $BIN_NAME
+
+sed -i '' -e "s/\"version: .*\"/\"version: $VERSION\"/g" init.go
 
 # check if docker is installed
 if [ $(which docker > /dev/null 2>&1; echo $?) -ne 0 ]; then
@@ -17,4 +23,4 @@ if [ -z $GOPATH ]; then
 fi
 
 # run docker with build cmd
-docker run --rm -it -v "$GOPATH":/work -e "GOPATH=/work" -w /work/src/$GIT_REPO golang:latest go build -o $BIN_PATH
+docker run --rm -it -v "$GOPATH":/work -e "GOPATH=/work" -w /work/src/$GIT_REPO -e GOOS=$GOOS -e GOARCH=$GOARCH golang:latest go build -o $BIN_PATH
