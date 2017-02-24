@@ -62,6 +62,7 @@ func listen(client *dclient.Client) {
 		case err := <-errs:
 			if err != nil {
 				fmt.Printf("%s\n", err)
+				os.Exit(1)
 			}
 		case e := <-messages:
 			switch e.Action {
