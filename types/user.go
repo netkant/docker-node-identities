@@ -3,10 +3,11 @@ package types
 // ...
 import (
 	"fmt"
+	"os/user"
 	"strings"
 )
 
-// User: username:password:uid:gid:comment:home:shell
+// User is parsed from  "username:password:uid:gid:comment:home:shell"
 type User struct {
 	Username string
 	Password string // omitted (for now)
@@ -17,18 +18,18 @@ type User struct {
 	Shell    string
 }
 
-// ...
+// NewUser ...
 func NewUser(data string) (User, error) {
-	var user User
+	var t User
 	parts := strings.Split(data, ":")
 
 	// ...
 	if len(parts) > 7 {
-		return user, fmt.Errorf("...")
+		return t, fmt.Errorf("user string should only consist of 7 parts")
 	}
 
 	// ...
-	user = User{
+	t = User{
 		Username: getIndexValue(parts, 0, ""),
 		Password: getIndexValue(parts, 1, ""),
 		UID:      getIndexValue(parts, 2, ""),
@@ -38,90 +39,110 @@ func NewUser(data string) (User, error) {
 		Shell:    getIndexValue(parts, 6, ""),
 	}
 
-	return user, nil
+	return t, nil
 }
 
-// ...
-func (user User) Create() error {
+// Create ...
+func (t User) Create() error {
 	// ...
 	err := fmt.Errorf("could not create user, no supported command was found")
 
 	// ...
+	if t.Username == "" {
+		return fmt.Errorf("username is required")
+	}
+
+	// ...
+	if _, err := user.Lookup(t.Username); err == nil {
+		return fmt.Errorf("user '%s' already exists", t.Username)
+	}
+
+	// ...
+	if t.UID != "" {
+		if _, err := user.LookupId(t.UID); err == nil {
+			return fmt.Errorf("user with id '%s' already exists", t.UID)
+		}
+	}
+
+	// ...
+	if t.GID == "" {
+		t.GID = t.UID
+	}
+
+	// ...
+	if _, err := user.LookupGroupId(t.GID); err != nil {
+		return fmt.Errorf("group does not exist")
+	}
+
+	// ...
 	if path := commandExists("useradd"); path != "" {
-		err = user.useradd(path)
+		err = t.useradd(path)
 	}
 
 	return err
 }
 
-// ...
-func (user User) Delete() error {
+// Delete ...
+func (t User) Delete() error {
 	// ...
 	err := fmt.Errorf("could not delete user, no supported command was found")
 
 	// ...
 	if path := commandExists("userdel"); path != "" {
-		err = user.userdel(path)
+		err = t.userdel(path)
 	}
 
 	return err
 }
 
-// ...
-func (user User) useradd(path string) error {
+// useradd ...
+func (t User) useradd(path string) error {
 	args := []string{}
 
 	// ...
-	if user.Username == "" {
-		return fmt.Errorf("username is required")
-	}
-
-	// ...
-	if user.Password != "" {
+	if t.Password != "" {
 		args = append(args, "--password")
-		args = append(args, user.Password)
+		args = append(args, t.Password)
 	}
 
 	// ...
-	if user.UID != "" {
+	if t.UID != "" {
 		args = append(args, "--uid")
-		args = append(args, user.UID)
+		args = append(args, t.UID)
 	}
 
 	// ...
-	if user.GID != "" {
+	if t.GID != "" {
 		args = append(args, "--gid")
-		args = append(args, user.GID)
+		args = append(args, t.GID)
 	}
 
 	// ...
-	if user.Comment != "" {
+	if t.Comment != "" {
 		args = append(args, "--comment")
-		args = append(args, user.Comment)
+		args = append(args, t.Comment)
 	}
 
 	// ...
-	if user.Home != "" {
+	if t.Home != "" {
 		args = append(args, "--home-dir")
-		args = append(args, user.Home)
+		args = append(args, t.Home)
 	} else {
 		args = append(args, "--no-create-home")
 	}
 
 	// ...
-	if user.Shell != "" {
+	if t.Shell != "" {
 		args = append(args, "--shell")
-		args = append(args, user.Shell)
+		args = append(args, t.Shell)
 	}
 
 	// the username to add
-	args = append(args, user.Username)
+	args = append(args, t.Username)
 
 	// ...
 	_, exitCode := commandExecute(path, args...)
 	switch exitCode {
-	case 9:
-		return fmt.Errorf("user '%s' already exists", user.Username)
 	case 0:
 		return nil
 	default:
@@ -130,11 +151,11 @@ func (user User) useradd(path string) error {
 }
 
 // ...
-func (user User) userdel(path string) error {
+func (t User) userdel(path string) error {
 	args := []string{}
 
 	// ...
-	if user.Username == "" {
+	if t.Username == "" {
 		return fmt.Errorf("username is required")
 	}
 
@@ -145,13 +166,13 @@ func (user User) userdel(path string) error {
 	args = append(args, "--force")
 
 	// the username to delete
-	args = append(args, user.Username)
+	args = append(args, t.Username)
 
 	// ...
 	_, exitCode := commandExecute(path, args...)
 	switch exitCode {
 	case 6:
-		return fmt.Errorf("user '%s' does not exist", user.Username)
+		return fmt.Errorf("user '%s' does not exist", t.Username)
 	case 0:
 		return nil
 	default:

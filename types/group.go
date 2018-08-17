@@ -3,10 +3,11 @@ package types
 // ...
 import (
 	"fmt"
+	"os/user"
 	"strings"
 )
 
-// Group: name:password:gid:members
+// Group is parsed from "name:password:gid:members"
 type Group struct {
 	Name     string
 	Password string
@@ -14,82 +15,92 @@ type Group struct {
 	Members  string // omitted in create
 }
 
-// ...
+// NewGroup ...
 func NewGroup(data string) (Group, error) {
-	var group Group
+	var t Group
 	parts := strings.Split(data, ":")
 
 	// ...
 	if len(parts) > 4 {
-		return group, fmt.Errorf("...")
+		return t, fmt.Errorf("group string should only consist of 4 parts")
 	}
 
 	// ...
-	group = Group{
+	t = Group{
 		Name:     getIndexValue(parts, 0, ""),
 		Password: getIndexValue(parts, 1, ""),
 		GID:      getIndexValue(parts, 2, ""),
 		Members:  getIndexValue(parts, 3, ""),
 	}
 
-	return group, nil
+	return t, nil
 }
 
-// ...
-func (group Group) Create() error {
+// Create ...
+func (t Group) Create() error {
 	// ...
 	err := fmt.Errorf("could not create group, no supported command was found")
 
 	// ...
+	if t.Name == "" {
+		return fmt.Errorf("name is required")
+	}
+
+	// ...
+	if _, err := user.LookupGroup(t.Name); err == nil {
+		return fmt.Errorf("group '%s' already exists", t.Name)
+	}
+
+	// ...
+	if t.GID != "" {
+		if _, err := user.LookupGroupId(t.GID); err == nil {
+			return fmt.Errorf("group with id '%s' already exists", t.GID)
+		}
+	}
+
+	// ...
 	if path := commandExists("groupadd"); path != "" {
-		err = group.groupadd(path)
+		err = t.groupadd(path)
 	}
 
 	return err
 }
 
-// ...
-func (group Group) Delete() error {
+// Delete ...
+func (t Group) Delete() error {
 	// ...
 	err := fmt.Errorf("could not create group, no supported command was found")
 
 	// ...
 	if path := commandExists("groupdel"); path != "" {
-		err = group.groupdel(path)
+		err = t.groupdel(path)
 	}
 
 	return err
 }
 
-// ...
-func (group Group) groupadd(path string) error {
+// groupadd ...
+func (t Group) groupadd(path string) error {
 	args := []string{}
 
 	// ...
-	if group.Name == "" {
-		return fmt.Errorf("name is required")
-	}
-
-	// ...
-	if group.Password != "" {
+	if t.Password != "" {
 		args = append(args, "--password")
-		args = append(args, group.Password)
+		args = append(args, t.Password)
 	}
 
 	// ...
-	if group.GID != "" {
+	if t.GID != "" {
 		args = append(args, "--gid")
-		args = append(args, group.GID)
+		args = append(args, t.GID)
 	}
 
 	// the name to add
-	args = append(args, group.Name)
+	args = append(args, t.Name)
 
 	// ...
 	_, exitCode := commandExecute(path, args...)
 	switch exitCode {
-	case 9:
-		return fmt.Errorf("group '%s' already exists", group.Name)
 	case 0:
 		return nil
 	default:
@@ -98,23 +109,24 @@ func (group Group) groupadd(path string) error {
 }
 
 // ...
-func (group Group) groupdel(path string) error {
+func (t Group) groupdel(path string) error {
 	args := []string{}
 
 	// ...
-	if group.Name == "" {
+	if t.Name == "" {
 		return fmt.Errorf("name is required")
 	}
 
 	// the name to delete
-	args = append(args, group.Name)
+	args = append(args, t.Name)
 
 	// ...
 	_, exitCode := commandExecute(path, args...)
 	switch exitCode {
 	case 6:
-		return fmt.Errorf("group '%s' does not exist", group.Name)
+		return fmt.Errorf("group '%s' does not exist", t.Name)
 	case 0:
+		// clog.info("group created")
 		return nil
 	default:
 		return fmt.Errorf("unknown userdel error: %d", exitCode)

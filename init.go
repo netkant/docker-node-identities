@@ -5,68 +5,76 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+
+	clog "github.com/urlund/docker-node-identities/log"
 )
 
 // ...
 var (
-	USER_LABEL         string
-	GROUP_LABEL        string
-	DOCKER_API_VERSION float64
-	DOCKER_CERT_PATH   string
-	DOCKER_TLS_VERIFY  bool
-	VERSION            bool
-	DOCKER_HOST        string
+	DockerAPIVersion float64
+	DockerCertPath   string
+	DockerHost       string
+	DockerTLSVerify  bool
+	Debug            bool
+	GroupLabel       string
+	UserLabel        string
+	Version          bool
 )
 
 func init() {
 	// ...
 	if _default := os.Getenv("GROUP_LABEL"); _default == "" {
-		GROUP_LABEL = "docker.node.identities.group"
+		GroupLabel = "docker.node.identities.group"
 	}
 
 	// ...
 	if _default := os.Getenv("USER_LABEL"); _default == "" {
-		USER_LABEL = "docker.node.identities.user"
+		UserLabel = "docker.node.identities.user"
 	}
 
 	// ...
 	if _default := os.Getenv("DOCKER_API_VERSION"); _default == "" {
-		DOCKER_API_VERSION = 1.24
+		DockerAPIVersion = 1.24
 	}
 
 	// ...
 	if _default := os.Getenv("DOCKER_CERT_PATH"); _default == "" {
-		DOCKER_CERT_PATH = ""
+		DockerCertPath = ""
 	}
 
 	// ...
 	if _default := os.Getenv("DOCKER_HOST"); _default == "" {
-		DOCKER_HOST = "unix:///var/run/docker.sock"
+		DockerHost = "unix:///var/run/docker.sock"
 	}
 
 	// ...
 	if _default := os.Getenv("DOCKER_TLS_VERIFY"); _default == "" {
-		DOCKER_TLS_VERIFY = false
+		DockerTLSVerify = false
 	}
 
 	// ...
-	flag.StringVar(&GROUP_LABEL, "group-label", GROUP_LABEL, "Label containing group config")
-	flag.StringVar(&USER_LABEL, "user-label", USER_LABEL, "Label containing user config")
-	flag.Float64Var(&DOCKER_API_VERSION, "docker-api-version", DOCKER_API_VERSION, "Docker API version")
-	flag.StringVar(&DOCKER_CERT_PATH, "docker-cert-path", DOCKER_CERT_PATH, "Path to TLS files")
-	flag.StringVar(&DOCKER_HOST, "docker-host", DOCKER_HOST, "Daemon socket to connect to")
-	flag.BoolVar(&DOCKER_TLS_VERIFY, "docker-tls-verify", DOCKER_TLS_VERIFY, "Use TLS and verify the remote")
-	flag.BoolVar(&VERSION, "version", VERSION, "Show version")
+	flag.StringVar(&GroupLabel, "group-label", GroupLabel, "Label containing group config")
+	flag.StringVar(&UserLabel, "user-label", UserLabel, "Label containing user config")
+	flag.Float64Var(&DockerAPIVersion, "docker-api-version", DockerAPIVersion, "Docker API version")
+	flag.StringVar(&DockerCertPath, "docker-cert-path", DockerCertPath, "Path to TLS files")
+	flag.StringVar(&DockerHost, "docker-host", DockerHost, "Daemon socket to connect to")
+	flag.BoolVar(&DockerTLSVerify, "docker-tls-verify", DockerTLSVerify, "Use TLS and verify the remote")
+	flag.BoolVar(&Version, "version", Version, "Show version")
+	flag.BoolVar(&Debug, "debug", Debug, "Show debug info")
 	flag.Parse()
 
-	if VERSION {
-		fmt.Println("version: 1.0.2")
+	if Version {
+		fmt.Println("version: 1.0.4")
 		os.Exit(0)
 	}
 
+	clog.Settings = &clog.LogSettings{
+		Debug: Debug,
+	}
+
 	// ...
-	os.Setenv("DOCKER_API_VERSION", strconv.FormatFloat(DOCKER_API_VERSION, 'f', 2, 64))
-	os.Setenv("DOCKER_CERT_PATH", DOCKER_CERT_PATH)
-	os.Setenv("DOCKER_HOST", DOCKER_HOST)
-	os.Setenv("DOCKER_TLS_VERIFY", strconv.FormatBool(DOCKER_TLS_VERIFY))
+	os.Setenv("DOCKER_API_VERSION", strconv.FormatFloat(DockerAPIVersion, 'f', 2, 64))
+	os.Setenv("DOCKER_CERT_PATH", DockerCertPath)
+	os.Setenv("DOCKER_HOST", DockerHost)
+	os.Setenv("DOCKER_TLS_VERIFY", strconv.FormatBool(DockerTLSVerify))
 }

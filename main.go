@@ -4,50 +4,60 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
+	// "os"
+	"time"
 
 	dtypes "github.com/docker/docker/api/types"
 	devents "github.com/docker/docker/api/types/events"
 	dfilters "github.com/docker/docker/api/types/filters"
 	dclient "github.com/docker/docker/client"
+	clog "github.com/urlund/docker-node-identities/log"
 	ctypes "github.com/urlund/docker-node-identities/types"
 )
 
-// ...
+// main ...
 func main() {
-	// ...
-	if client, err := dclient.NewEnvClient(); err != nil {
-		fmt.Printf("%s\n", err)
-	} else {
-		// ...
-		go sync(client)
+	for {
+		if client, err := dclient.NewEnvClient(); err == nil {
+			if _, err := client.Ping(context.Background()); err == nil {
+				clog.Debug("connected to docker")
 
-		// ...
-		listen(client)
-	}
-}
+				// ...
+				go sync(client)
 
-// ...
-func sync(client *dclient.Client) {
-
-	// ...
-	containers, err := getContainers(client)
-
-	if err != nil {
-		fmt.Printf("%s\n", err)
-		os.Exit(1)
-	}
-
-	// ...
-	for _, container := range containers {
-		if err := create(container.Labels); err != nil {
-			fmt.Printf("%s\n", err)
+				// ...
+				if err := listen(client); err != nil {
+					clog.Info("%s", err)
+				}
+			} else {
+				clog.Info("%s", err)
+				time.Sleep(5000 * time.Millisecond)
+			}
+		} else {
+			clog.Info("%s", err)
 		}
 	}
 }
 
-// ...
-func listen(client *dclient.Client) {
+// sync ...
+func sync(client *dclient.Client) {
+	// ...
+	if containers, err := getContainers(client); err == nil {
+		if len(containers) > 0 {
+			clog.Debug("checking already running containers")
+		}
+
+		// ...
+		for _, container := range containers {
+			create(container.Labels)
+		}
+	} else {
+		clog.Info("%s", err)
+	}
+}
+
+// listen ...
+func listen(client *dclient.Client) error {
 	// make sure we are only listening to container events
 	filters := dfilters.NewArgs()
 	filters.Add("type", devents.ContainerEventType)
@@ -60,87 +70,89 @@ func listen(client *dclient.Client) {
 	for {
 		select {
 		case err := <-errs:
-			if err != nil {
-				fmt.Printf("%s\n", err)
-				os.Exit(1)
-			}
+			return err
 		case e := <-messages:
 			switch e.Action {
-			case "start": // always triggered when a container starts running
+			case "start":
 				if container, err := getContainer(client, e.ID); err == nil {
-					if err := create(container.Config.Labels); err != nil {
-						fmt.Printf("%s\n", err)
-					}
-				} else {
-					fmt.Printf("%s\n", err)
+					create(container.Config.Labels)
 				}
-			case "die": // other actions would be "kill" or "stop", but "die" is always triggered when a container exits
+			case "die", "kill", "stop":
 				if container, err := getContainer(client, e.ID); err == nil {
 					if err := delete(client, container.Config.Labels); err != nil {
-						fmt.Printf("%s\n", err)
+						clog.Debug("container %s: %s", container.Name, err)
 					}
-				} else {
-					fmt.Printf("%s\n", err)
 				}
 			}
 		}
 	}
 }
 
-// ...
+// parseUser ...
 func parseUser(labels map[string]string) (ctypes.User, error) {
 	var user ctypes.User
 
-	data, exists := labels[USER_LABEL]
+	data, exists := labels[UserLabel]
 	if !exists {
-		return user, fmt.Errorf("user label does not exist")
+		return user, fmt.Errorf("user label '%s' does not exist", UserLabel)
 	}
 
 	//
 	return ctypes.NewUser(data)
 }
 
-// ...
+// parseGroup ...
 func parseGroup(labels map[string]string) (ctypes.Group, error) {
 	var group ctypes.Group
 
-	data, exists := labels[GROUP_LABEL]
+	data, exists := labels[GroupLabel]
 	if !exists {
-		return group, fmt.Errorf("group label does not exist")
+		return group, fmt.Errorf("group label '%s' does not exist", GroupLabel)
 	}
 
-	//
 	return ctypes.NewGroup(data)
 }
 
-// ...
-func create(labels map[string]string) error {
+// create ...
+func create(labels map[string]string) {
+	if err := createGroup(labels); err != nil {
+		clog.Debug("%s", err)
+	}
+
+	if err := createUser(labels); err != nil {
+		clog.Debug("%s", err)
+	}
+}
+
+// createGroup ...
+func createGroup(labels map[string]string) error {
 	group, err := parseGroup(labels)
 	if err == nil {
 		if err := group.Create(); err != nil {
 			return err
-		} else {
-			fmt.Printf("group '%s' was created\n", group.Name)
 		}
+
+		clog.Info("group '%s' was created", group.Name)
 	}
 
-	if user, err := parseUser(labels); err == nil {
-		if group.GID != "" {
-			user.GID = group.GID
-		}
-		if err := user.Create(); err != nil {
-			return err
-		} else {
-			fmt.Printf("user '%s' was created\n", user.Username)
-		}
-	} else {
-		return err
-	}
-
-	return nil
+	return err
 }
 
-// ...
+// create ...
+func createUser(labels map[string]string) error {
+	user, err := parseUser(labels)
+	if err == nil {
+		if err := user.Create(); err != nil {
+			return err
+		}
+
+		clog.Info("user '%s' was created", user.Username)
+	}
+
+	return err
+}
+
+// delete ...
 func delete(client *dclient.Client, labels map[string]string) error {
 	// ...
 	containers, err := getContainers(client)
@@ -158,15 +170,15 @@ func delete(client *dclient.Client, labels map[string]string) error {
 			}
 
 			if _user.Username == user.Username {
-				return fmt.Errorf("user '%s' was not deleted (defined in another label)", user.Username)
+				return fmt.Errorf("user '%s' was not deleted (also defined by another container)", user.Username)
 			}
 		}
 
 		if err := user.Delete(); err != nil {
 			return err
-		} else {
-			fmt.Printf("user '%s' was deleted\n", user.Username)
 		}
+
+		clog.Info("user '%s' was deleted", user.Username)
 	} else {
 		return err
 	}
@@ -180,35 +192,34 @@ func delete(client *dclient.Client, labels map[string]string) error {
 			}
 
 			if _group.Name == group.Name {
-				return fmt.Errorf("group '%s' was not deleted (defined in another label)", group.Name)
+				return fmt.Errorf("group '%s' was not deleted (also defined by another container)", group.Name)
 			}
 		}
 
 		if err := group.Delete(); err != nil {
 			return err
-		} else {
-			fmt.Printf("group '%s' was deleted\n", group.Name)
 		}
+
+		clog.Info("group '%s' was deleted", group.Name)
 	}
 
 	return nil
 }
 
-// ...
+// getContainers ...
 func getContainers(client *dclient.Client) ([]dtypes.Container, error) {
 	// ...
 	filters := dfilters.NewArgs()
-	filters.Add("label", USER_LABEL)
+	filters.Add("label", UserLabel)
 
 	containerListOptions := dtypes.ContainerListOptions{
 		Filters: filters,
 	}
 
-	// ...
 	return client.ContainerList(context.Background(), containerListOptions)
 }
 
-// ...
+// getContainer ...
 func getContainer(client *dclient.Client, id string) (dtypes.ContainerJSON, error) {
 	return client.ContainerInspect(context.Background(), id)
 }
