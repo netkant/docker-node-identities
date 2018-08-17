@@ -4,22 +4,24 @@ A tool that will create/remove users and groups on a docker node, if required by
 ## Flags
 
 ```
-$ docker-node-identities -help
+$ docker-node-identities -h
 Usage of docker-node-identities:
--docker-api-version float
-      Docker API version (default 1.24)
--docker-cert-path string
-      Path to TLS files
--docker-host string
-      Daemon socket to connect to (default "unix:///var/run/docker.sock")
--docker-tls-verify
-      Use TLS and verify the remote
--group-label string
-      Label containing group config (default "docker.node.identities.group")
--user-label string
-      Label containing user config (default "docker.node.identities.user")
--version
-	  Show version
+  -debug
+    	Show debug info
+  -docker-api-version float
+    	Docker API version (default 1.24)
+  -docker-cert-path string
+    	Path to TLS files
+  -docker-host string
+    	Daemon socket to connect to (default "unix:///var/run/docker.sock")
+  -docker-tls-verify
+    	Use TLS and verify the remote
+  -group-label string
+    	Label containing group config (default "docker.node.identities.group")
+  -user-label string
+    	Label containing user config (default "docker.node.identities.user")
+  -version
+    	Show version
 ```
 
 ## Labels
